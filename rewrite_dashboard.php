@@ -1,3 +1,6 @@
+<?php
+$file_path = "application/views/admin_dashboard.php";
+$content = <<<'HTML'
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -227,8 +230,7 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <ul class="sidebar-menu">
-        <li><a class="sidebar-link active" onclick="switchTab('dashboard', this)">📋 Dashboard Utama</a></li>
-        <li><a class="sidebar-link" onclick="switchTab('category', this)">📂 Kelola Kategori</a></li>
+        <li><a class="sidebar-link active" onclick="switchTab('category', this)">📂 Kelola Kategori</a></li>
         <li><a class="sidebar-link" onclick="switchTab('item', this)">📦 Kelola Model 3D</a></li>
       </ul>
     </aside>
@@ -242,16 +244,8 @@
         </div>
       <?php endif; ?>
 
-      <!-- TAB: Dashboard -->
-      <div id="tab-dashboard" class="tab-content active">
-        <div class="glass-card">
-          <h2 class="card-title">Selamat Datang di Admin Panel</h2>
-          <p style="color: #a3a8b8; line-height: 1.6;">Silakan gunakan menu di sebelah kiri untuk mengelola data Kategori dan Model 3D Anda. Data yang tersimpan akan langsung terhubung ke tampilan Carousel 3D secara *real-time*.</p>
-        </div>
-      </div>
-
       <!-- TAB: Kategori -->
-      <div id="tab-category" class="tab-content">
+      <div id="tab-category" class="tab-content active">
         <div class="glass-card">
           <div class="header-action">
             <h2 class="card-title">Daftar Kategori Tersimpan</h2>
@@ -566,3 +560,6 @@
   </script>
 </body>
 </html>
+HTML;
+file_put_contents($file_path, $content);
+echo 'Rewrite success.';

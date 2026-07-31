@@ -73,6 +73,7 @@ class Admin extends Controller {
                 'name' => $_POST['name'],
                 'tag' => $_POST['tag'],
                 'scale' => isset($_POST['scale']) && $_POST['scale'] !== '' ? (float)$_POST['scale'] : 1.0,
+                'bg_color' => isset($_POST['auto_color']) ? '' : ($_POST['bg_color'] ?? ''),
                 'description' => $_POST['description'],
                 'custom_specs' => json_encode($custom_specs)
             ];

@@ -16,11 +16,18 @@
       box-sizing: border-box;
     }
 
+    @property --target-bg-color {
+      syntax: '<color>';
+      inherits: true;
+      initial-value: #1a1f33;
+    }
+
     body, html {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: radial-gradient(circle at 50% 50%, #1a1f33 0%, #090b10 100%);
+      background: radial-gradient(circle at 50% 50%, var(--target-bg-color, #1a1f33) 0%, #090b10 100%);
+      transition: --target-bg-color 1.5s ease-in-out;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       color: #ffffff;
     }
@@ -52,12 +59,16 @@
     .glow-1 {
       top: 10%;
       left: 20%;
-      background: rgba(109, 123, 255, 0.15);
+      background: var(--target-bg-color);
+      opacity: 0.25;
+      transition: background 1.5s ease-in-out;
     }
     .glow-2 {
       bottom: 10%;
       right: 20%;
-      background: rgba(255, 94, 247, 0.1);
+      background: var(--target-bg-color);
+      opacity: 0.15;
+      transition: background 1.5s ease-in-out;
     }
 
     /* Header / Navbar */
@@ -479,6 +490,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
   
   <!-- Inject PHP Data to JS -->
   <script>
