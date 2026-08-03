@@ -16,11 +16,18 @@
       box-sizing: border-box;
     }
 
+    @property --target-bg-color {
+      syntax: '<color>';
+      inherits: true;
+      initial-value: #1a1f33;
+    }
+
     body, html {
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: radial-gradient(circle at 50% 50%, #1a1f33 0%, #090b10 100%);
+      background: radial-gradient(circle at 50% 50%, var(--target-bg-color, #1a1f33) 0%, #090b10 100%);
+      transition: --target-bg-color 1.5s ease-in-out;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       color: #ffffff;
     }
@@ -52,12 +59,16 @@
     .glow-1 {
       top: 10%;
       left: 20%;
-      background: rgba(109, 123, 255, 0.15);
+      background: var(--target-bg-color);
+      opacity: 0.25;
+      transition: background 1.5s ease-in-out;
     }
     .glow-2 {
       bottom: 10%;
       right: 20%;
-      background: rgba(255, 94, 247, 0.1);
+      background: var(--target-bg-color);
+      opacity: 0.15;
+      transition: background 1.5s ease-in-out;
     }
 
     /* Header / Navbar */
@@ -225,7 +236,7 @@
       transform: scale(1.4);
     }
 
-    /* Left Side Panel (No Card/Box Background) */
+    /* Left Side Panel (Glass Card) */
     #side-panel {
       position: absolute;
       top: 50%;
@@ -233,13 +244,14 @@
       transform: translateY(-50%) translateX(-20px);
       width: 380px;
       max-width: 90vw;
-      background: transparent;
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      border: none;
-      box-shadow: none;
+      background: rgba(15, 17, 26, 0.55);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       box-sizing: border-box;
-      padding: 0;
+      padding: 32px;
       color: #ffffff;
       opacity: 0;
       transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
@@ -253,8 +265,8 @@
     }
     .close-btn {
       position: absolute;
-      top: 0;
-      right: 0;
+      top: 20px;
+      right: 20px;
       width: 32px;
       height: 32px;
       border-radius: 50%;
@@ -377,16 +389,23 @@
       }
       #side-panel {
         top: auto;
-        bottom: 40px;
+        bottom: 20px;
         left: 20px;
         width: calc(100% - 40px);
         max-width: 100vw;
-        background: transparent;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        border: none;
+        background: rgba(15, 17, 26, 0.65);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
         transform: translateY(20px);
         transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+        padding: 24px;
+      }
+      .close-btn {
+        top: 16px;
+        right: 16px;
       }
       #side-panel.visible {
         transform: translateY(0);
@@ -479,6 +498,7 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/environments/RoomEnvironment.js"></script>
   
   <!-- Inject PHP Data to JS -->
   <script>

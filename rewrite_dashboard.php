@@ -1,3 +1,6 @@
+<?php
+$file_path = "application/views/admin_dashboard.php";
+$content = <<<'HTML'
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -227,8 +230,7 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <ul class="sidebar-menu">
-        <li><a class="sidebar-link active" onclick="switchTab('dashboard', this)">📋 Dashboard Utama</a></li>
-        <li><a class="sidebar-link" onclick="switchTab('category', this)">📂 Kelola Kategori</a></li>
+        <li><a class="sidebar-link active" onclick="switchTab('category', this)">📂 Kelola Kategori</a></li>
         <li><a class="sidebar-link" onclick="switchTab('item', this)">📦 Kelola Model 3D</a></li>
       </ul>
     </aside>
@@ -242,16 +244,8 @@
         </div>
       <?php endif; ?>
 
-      <!-- TAB: Dashboard -->
-      <div id="tab-dashboard" class="tab-content active">
-        <div class="glass-card">
-          <h2 class="card-title">Selamat Datang di Admin Panel</h2>
-          <p style="color: #a3a8b8; line-height: 1.6;">Silakan gunakan menu di sebelah kiri untuk mengelola data Kategori dan Model 3D Anda. Data yang tersimpan akan langsung terhubung ke tampilan Carousel 3D secara *real-time*.</p>
-        </div>
-      </div>
-
       <!-- TAB: Kategori -->
-      <div id="tab-category" class="tab-content">
+      <div id="tab-category" class="tab-content active">
         <div class="glass-card">
           <div class="header-action">
             <h2 class="card-title">Daftar Kategori Tersimpan</h2>
@@ -399,7 +393,6 @@
                 <input type="file" id="file_3d" name="file_3d" accept=".fbx,.glb,.obj">
                 <div class="file-name-display" id="file-name-display"></div>
             </div>
-            <p style="font-size: 12px; color: #7bed9f; margin-top: 10px; line-height: 1.4;">💡 <b>Sangat Disarankan:</b> Gunakan file dengan format <b>.glb</b> karena ukurannya jauh lebih kecil, memuat lebih cepat, dan material warnanya langsung akurat di web.</p>
           </div>
           
           <div class="form-group" style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
@@ -567,3 +560,6 @@
   </script>
 </body>
 </html>
+HTML;
+file_put_contents($file_path, $content);
+echo 'Rewrite success.';

@@ -44,6 +44,7 @@ class Item_model extends Model {
                     'tag' => $item['tag'],
                     'path' => $item['path'],
                     'scale' => (float)$item['scale'],
+                    'bg_color' => $item['bg_color'],
                     'position' => $position,
                     'desc' => $item['description'],
                     'custom_specs' => $custom_specs
@@ -70,8 +71,8 @@ class Item_model extends Model {
     }
 
     public function add_item($data) {
-        $sql = "INSERT INTO items (category_id, name, tag, path, scale, description, custom_specs) 
-                VALUES (:category_id, :name, :tag, :path, :scale, :description, :custom_specs)";
+        $sql = "INSERT INTO items (category_id, name, tag, path, scale, bg_color, description, custom_specs) 
+                VALUES (:category_id, :name, :tag, :path, :scale, :bg_color, :description, :custom_specs)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             ':category_id' => $data['category_id'],
@@ -79,6 +80,7 @@ class Item_model extends Model {
             ':tag' => $data['tag'],
             ':path' => $data['path'],
             ':scale' => $data['scale'],
+            ':bg_color' => $data['bg_color'],
             ':description' => $data['description'],
             ':custom_specs' => $data['custom_specs']
         ]);
@@ -92,6 +94,7 @@ class Item_model extends Model {
                 tag = :tag, 
                 path = :path, 
                 scale = :scale, 
+                bg_color = :bg_color, 
                 description = :description, 
                 custom_specs = :custom_specs 
                 WHERE id = :id";
@@ -102,6 +105,7 @@ class Item_model extends Model {
             ':tag' => $data['tag'],
             ':path' => $data['path'],
             ':scale' => $data['scale'],
+            ':bg_color' => $data['bg_color'],
             ':description' => $data['description'],
             ':custom_specs' => $data['custom_specs'],
             ':id' => $id

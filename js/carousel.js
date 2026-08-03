@@ -54,6 +54,11 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputEncoding = THREE.sRGBEncoding;
+
+// 🟢 TONE MAPPING: Mencegah efek "putih surga" (over-exposed) pada material putih/terang!
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.8; // Turunkan exposure (kecerahan kamera) agar lebih natural
+
 container.appendChild(renderer.domElement);
 
 /* =========================================================================
@@ -97,26 +102,36 @@ window.addEventListener('pointerup', (event) => {
 });
 
 /* =========================================================================
-   5. STUDIO LIGHTING
+   5. STUDIO LIGHTING (PENGATURAN CAHAYA)
    ========================================================================= */
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+// 1. Ambient Light (Cahaya dasar yang mengisi ke seluruh sudut ruangan)
+// Karena kita sudah pakai RoomEnvironment, ambient light wajib diredupkan drastis!
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Turunkan ke 0.2
 scene.add(ambientLight);
 
-const keyLight = new THREE.DirectionalLight(0xffffff, 1.2);
-keyLight.position.set(5, 8, 5);
+// 2. Key Light (Sorotan Lampu Utama)
+// Posisi .set(X, Y, Z) -> X(Kiri/Kanan), Y(Bawah/Atas), Z(Belakang/Depan)
+const keyLight = new THREE.DirectionalLight(0xffffff, 0.5); // Turunkan ke 0.5 (HDRI sudah cukup terang)
+keyLight.position.set(3, 5, 8); // Dipindah lebih ke DEPAN (Z=8) dan lebih rendah (Y=5) agar menerangi "wajah" objek
 keyLight.castShadow = true;
 keyLight.shadow.mapSize.width = 2048;
 keyLight.shadow.mapSize.height = 2048;
 keyLight.shadow.bias = -0.0001;
 scene.add(keyLight);
 
-const fillLight = new THREE.DirectionalLight(0x8292ff, 0.6);
-fillLight.position.set(-5, -2, -3);
+// 3. Fill Light (Lampu Pengisi dari sisi berlawanan agar bagian gelap tetap terlihat)
+const fillLight = new THREE.DirectionalLight(0x8292ff, 0.3); // Turunkan ke 0.3
+fillLight.position.set(-5, 2, 5); // Dipindah ke Kiri Depan agar menyeimbangkan bayangan dari Key Light
 scene.add(fillLight);
 
-const rimLight = new THREE.PointLight(0xff5ef7, 0.8, 15);
+// 4. Rim Light (Lampu hiasan belakang / Backlight warna pink)
+const rimLight = new THREE.PointLight(0xff5ef7, 0.4, 15); // Turunkan ke 0.4
 rimLight.position.set(0, 3, -5);
 scene.add(rimLight);
+
+// 5. HDRI / RoomEnvironment (Agar Logam/Kaca memantulkan lingkungan)
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+scene.environment = pmremGenerator.fromScene(new THREE.RoomEnvironment(), 0.04).texture;
 
 /* =========================================================================
    6. LOADERS & LOAD PRODUCTS IN PARALLEL
@@ -178,27 +193,33 @@ function loadAllProducts() {
     const onLoaded = (loadedData) => {
       const model = (ext === 'glb' || ext === 'gltf') ? loadedData.scene : loadedData;
 
-      // Initial DB scale
-      const s = prod.scale || 1;
-      model.scale.set(s, s, s);
-      if (prod.position && prod.position.length === 3) {
-          model.position.set(prod.position[0], prod.position[1], prod.position[2]);
+      // Reset posisi dulu
+      model.position.set(0, 0, 0);
+      model.updateMatrixWorld(true);
+      
+      // Auto-Scale (Menyesuaikan skala ekspor FBX (cm) vs GLB (meter) agar tidak kebesaran/kekecilan)
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z);
+      
+      if (maxDim > 0) {
+        const autoScale = (6.0 / maxDim) * (prod.scale || 1.0); // Target ukuran ~6.0 unit di layar
+        model.scale.setScalar(autoScale);
+      } else {
+        model.scale.setScalar(prod.scale || 1.0);
       }
 
-      // Centering pivot point
+      // Centering pivot point (Auto-Center)
       model.updateMatrixWorld(true);
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
+      const boxScaled = new THREE.Box3().setFromObject(model);
+      const center = boxScaled.getCenter(new THREE.Vector3());
       model.position.sub(center);
-
-      // Auto-scale to normalize sizes
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const maxDim = Math.max(size.x, size.y, size.z);
-      if (maxDim > 0) {
-        const targetVisualSize = 4.5; 
-        const autoScaleFactor = (targetVisualSize / maxDim) * s;
-        model.scale.set(autoScaleFactor, autoScaleFactor, autoScaleFactor);
+      
+      // Tambahkan offset manual jika didefinisikan di produk
+      if (prod.position) {
+         model.position.x += prod.position[0];
+         model.position.y += prod.position[1];
+         model.position.z += prod.position[2];
       }
 
       // Shadow and material transparent setup
@@ -207,18 +228,27 @@ function loadAllProducts() {
           child.castShadow = true;
           child.receiveShadow = true;
           if (child.material) {
-            if (Array.isArray(child.material)) {
-              child.material = child.material.map(m => {
-                const cloned = m.clone();
+            let mats = Array.isArray(child.material) ? child.material : [child.material];
+            mats.forEach((m, idx) => {
+              const cloned = m.clone();
+              cloned.transparent = true;
+              cloned.side = THREE.DoubleSide;
+              
+              // Tweak untuk Kaca & Metal (Memperbaiki shading/FBX export)
+              if (cloned.opacity < 0.9 || cloned.transmission > 0) {
                 cloned.transparent = true;
-                cloned.side = THREE.DoubleSide;
-                return cloned;
-              });
-            } else {
-              child.material = child.material.clone();
-              child.material.transparent = true;
-              child.material.side = THREE.DoubleSide;
-            }
+                cloned.depthWrite = false; // Kaca jangan menutupi render di belakangnya
+                cloned.roughness = 0.1;
+              }
+              // Jika metalness tinggi banget, turunkan sedikit agar cahaya lampu mempan
+              if (cloned.metalness > 0.8) {
+                cloned.metalness = 0.7;
+                cloned.roughness = Math.max(cloned.roughness, 0.15);
+              }
+              
+              mats[idx] = cloned;
+            });
+            child.material = Array.isArray(child.material) ? mats : mats[0];
           }
         }
       });
@@ -324,6 +354,119 @@ function triggerZoom(zoomIn) {
 }
 
 /* =========================================================================
+   7.5 BACKGROUND DYNAMIC COLOR
+   ========================================================================= */
+const dominantColorsCache = {};
+let needsColorUpdate = false;
+let framesSinceActive = 0;
+
+function updateAmbientColor() {
+  const currentGroup = groups[currentProductIndex];
+  if (!currentGroup || !currentGroup.visible) return;
+  
+  const prod = products[currentProductIndex];
+  if (prod && prod.bg_color && prod.bg_color.trim() !== '') {
+    applyBackgroundColor(new THREE.Color(prod.bg_color), true);
+    return;
+  }
+  
+  if (dominantColorsCache[currentProductIndex]) {
+    applyBackgroundColor(dominantColorsCache[currentProductIndex]);
+    return;
+  }
+  
+  const size = 64; 
+  const rt = new THREE.WebGLRenderTarget(size, size);
+  
+  const oldTarget = renderer.getRenderTarget();
+  const oldClearColor = new THREE.Color();
+  renderer.getClearColor(oldClearColor);
+  const oldClearAlpha = renderer.getClearAlpha();
+  
+  renderer.setRenderTarget(rt);
+  renderer.setClearColor(0x000000, 0);
+  
+  const oldVisibilities = groups.map(g => g ? g.visible : false);
+  groups.forEach(g => { if (g) g.visible = false; });
+  currentGroup.visible = true;
+
+  // --- Matikan lampu warna-warni & environment agar warna objek ASLI terbaca ---
+  const oldEnv = scene.environment;
+  scene.environment = null;
+  const lights = [];
+  scene.traverse(child => {
+    if (child.isLight) {
+      lights.push({ light: child, intensity: child.intensity });
+      child.intensity = 0; 
+    }
+  });
+  const tempLight = new THREE.AmbientLight(0xffffff, 1.5);
+  scene.add(tempLight);
+  // -----------------------------------------------------------------------------
+
+  renderer.render(scene, camera);
+  
+  const buffer = new Uint8Array(size * size * 4);
+  renderer.readRenderTargetPixels(rt, 0, 0, size, size, buffer);
+  
+  // --- Kembalikan lampu seperti semula ---
+  scene.remove(tempLight);
+  lights.forEach(l => l.light.intensity = l.intensity);
+  scene.environment = oldEnv;
+  // ---------------------------------------
+  
+  groups.forEach((g, i) => { if (g) g.visible = oldVisibilities[i]; });
+  renderer.setRenderTarget(oldTarget);
+  renderer.setClearColor(oldClearColor, oldClearAlpha);
+  rt.dispose();
+  
+  let r = 0, g = 0, b = 0, count = 0;
+  for (let i = 0; i < buffer.length; i += 4) {
+    if (buffer[i+3] > 10) { 
+      r += buffer[i];
+      g += buffer[i+1];
+      b += buffer[i+2];
+      count++;
+    }
+  }
+  
+  if (count > 0) {
+    const c = new THREE.Color(`rgb(${Math.round(r/count)}, ${Math.round(g/count)}, ${Math.round(b/count)})`);
+    
+    dominantColorsCache[currentProductIndex] = c;
+    applyBackgroundColor(c);
+  } else {
+    applyBackgroundColor(new THREE.Color(0x1a1f33)); // fallback
+  }
+}
+
+function applyBackgroundColor(color, isManual = false) {
+  if (isManual) {
+    document.documentElement.style.setProperty('--target-bg-color', '#' + color.getHexString());
+    return;
+  }
+  
+  const hsl = {};
+  color.getHSL(hsl);
+  
+  // Jika warna aslinya abu-abu/hitam/putih (netral), berikan rona biru gelap yang elegan
+  if (hsl.s < 0.15) {
+    hsl.h = 0.62; // Biru
+    hsl.s = 0.25; // Saturation rendah
+  } else {
+    // Jika objek memang berwarna, pertahankan hue-nya dan boost sedikit agar lebih hidup
+    hsl.s = Math.min(0.9, hsl.s * 1.3);
+  }
+  
+  // Pastikan warna cukup gelap untuk background agar teks tetap terbaca
+  hsl.l = Math.max(0.12, Math.min(0.28, hsl.l)); 
+  
+  const newColor = new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l);
+  
+  document.documentElement.style.setProperty('--target-bg-color', '#' + newColor.getHexString());
+}
+
+/* =========================================================================
    8. UI UPDATE & CAROUSEL NAVIGATION
    ========================================================================= */
 function goToIndex(newIndex) {
@@ -386,6 +529,9 @@ function updateUI() {
   });
 
   triggerZoom(false);
+  
+  needsColorUpdate = true;
+  framesSinceActive = 0;
 }
 
 const dotsContainer = document.getElementById('dots');
@@ -423,6 +569,9 @@ function switchCategory(catKey) {
     }
   });
   groups.fill(null);
+  
+  // Clear dominant color cache for new category
+  for (let key in dominantColorsCache) delete dominantColorsCache[key];
 
   // Ganti list produk dan kategori aktif
   currentCategoryKey = catKey;
@@ -543,6 +692,14 @@ container.addEventListener('pointerup', (event) => {
 function animate() {
   requestAnimationFrame(animate);
   
+  if (needsColorUpdate) {
+    framesSinceActive++;
+    if (framesSinceActive > 5) {
+      updateAmbientColor();
+      needsColorUpdate = false;
+    }
+  }
+  
   // Zoom transition (smooth lerp distance)
   const currentDist = camera.position.length();
   if (Math.abs(currentDist - targetZoomDistance) > 0.02) {
@@ -578,20 +735,14 @@ function animate() {
     // Objek samping selalu terlihat (dist <= 1), objek jauh disembunyikan
     group.visible = dist <= 1;
 
-    // Auto-rotation & drag behavior
+    // Rotasi Drag Behavior (TIDAK ADA AUTO-ROTATE LAGI!)
     if (isCenter) {
       // Rotasi yang halus berdasar target drag mouse (dengan damping 0.1)
       group.rotation.y += (targetRotationY - group.rotation.y) * 0.1;
       group.rotation.x += (targetRotationX - group.rotation.x) * 0.1;
-
-      // Auto-rotate aktif jika tidak sedang dizoom & tidak sedang didrag
-      if (!isZoomed && !isDragging) {
-        targetRotationY += 0.003;
-      }
     } else {
-      // Putar perlahan objek samping secara Y saja
-      group.rotation.y += 0.008 * Math.sign(diff || 1);
-      // Kembalikan rotasi X ke 0 jika sebelumnya diubah ketika jadi objek tengah
+      // Kembalikan rotasi X dan Y ke 0 (menghadap depan) saat jadi objek samping
+      group.rotation.y += (0 - group.rotation.y) * 0.1;
       group.rotation.x += (0 - group.rotation.x) * 0.1;
     }
   });
