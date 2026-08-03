@@ -432,25 +432,9 @@ function updateAmbientColor() {
   
   if (count > 0) {
     const c = new THREE.Color(`rgb(${Math.round(r/count)}, ${Math.round(g/count)}, ${Math.round(b/count)})`);
-    const hsl = {};
-    c.getHSL(hsl);
     
-    // Jika objek warnanya terlalu abu-abu (netral) atau hitam/putih murni, 
-    // kita bangkitkan warna unik dan cerah berdasarkan nama itemnya.
-    if (hsl.s < 0.15 || hsl.l < 0.15 || hsl.l > 0.85) {
-      const name = products[currentProductIndex].name || "Item";
-      let hash = 0;
-      for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      hsl.h = Math.abs(hash) % 360 / 360;
-      hsl.s = 0.7; // Cukup cerah
-      hsl.l = 0.5; // Tengah-tengah
-    }
-    
-    const finalColor = new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l);
-    dominantColorsCache[currentProductIndex] = finalColor;
-    applyBackgroundColor(finalColor);
+    dominantColorsCache[currentProductIndex] = c;
+    applyBackgroundColor(c);
   } else {
     applyBackgroundColor(new THREE.Color(0x1a1f33)); // fallback
   }
@@ -464,8 +448,19 @@ function applyBackgroundColor(color, isManual = false) {
   
   const hsl = {};
   color.getHSL(hsl);
-  hsl.s = Math.max(0.5, Math.min(0.9, hsl.s * 1.2)); // Boost saturation
-  hsl.l = Math.max(0.10, Math.min(0.28, hsl.l)); // Jadikan cukup gelap untuk background
+  
+  // Jika warna aslinya abu-abu/hitam/putih (netral), berikan rona biru gelap yang elegan
+  if (hsl.s < 0.15) {
+    hsl.h = 0.62; // Biru
+    hsl.s = 0.25; // Saturation rendah
+  } else {
+    // Jika objek memang berwarna, pertahankan hue-nya dan boost sedikit agar lebih hidup
+    hsl.s = Math.min(0.9, hsl.s * 1.3);
+  }
+  
+  // Pastikan warna cukup gelap untuk background agar teks tetap terbaca
+  hsl.l = Math.max(0.12, Math.min(0.28, hsl.l)); 
+  
   const newColor = new THREE.Color().setHSL(hsl.h, hsl.s, hsl.l);
   
   document.documentElement.style.setProperty('--target-bg-color', '#' + newColor.getHexString());

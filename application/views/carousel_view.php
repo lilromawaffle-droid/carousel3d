@@ -236,7 +236,7 @@
       transform: scale(1.4);
     }
 
-    /* Left Side Panel (No Card/Box Background) */
+    /* Left Side Panel (Glass Card) */
     #side-panel {
       position: absolute;
       top: 50%;
@@ -244,13 +244,14 @@
       transform: translateY(-50%) translateX(-20px);
       width: 380px;
       max-width: 90vw;
-      background: transparent;
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      border: none;
-      box-shadow: none;
+      background: rgba(15, 17, 26, 0.55);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
       box-sizing: border-box;
-      padding: 0;
+      padding: 32px;
       color: #ffffff;
       opacity: 0;
       transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
@@ -264,8 +265,8 @@
     }
     .close-btn {
       position: absolute;
-      top: 0;
-      right: 0;
+      top: 20px;
+      right: 20px;
       width: 32px;
       height: 32px;
       border-radius: 50%;
@@ -388,16 +389,23 @@
       }
       #side-panel {
         top: auto;
-        bottom: 40px;
+        bottom: 20px;
         left: 20px;
         width: calc(100% - 40px);
         max-width: 100vw;
-        background: transparent;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        border: none;
+        background: rgba(15, 17, 26, 0.65);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 24px;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
         transform: translateY(20px);
         transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease;
+        padding: 24px;
+      }
+      .close-btn {
+        top: 16px;
+        right: 16px;
       }
       #side-panel.visible {
         transform: translateY(0);

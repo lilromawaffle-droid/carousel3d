@@ -399,6 +399,7 @@
                 <input type="file" id="file_3d" name="file_3d" accept=".fbx,.glb,.obj">
                 <div class="file-name-display" id="file-name-display"></div>
             </div>
+            <p style="font-size: 12px; color: #7bed9f; margin-top: 10px; line-height: 1.4;">💡 <b>Sangat Disarankan:</b> Gunakan file dengan format <b>.glb</b> karena ukurannya jauh lebih kecil, memuat lebih cepat, dan material warnanya langsung akurat di web.</p>
           </div>
           
           <div class="form-group" style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05);">
