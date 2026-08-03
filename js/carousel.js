@@ -231,14 +231,15 @@ function loadAllProducts() {
             let mats = Array.isArray(child.material) ? child.material : [child.material];
             mats.forEach((m, idx) => {
               const cloned = m.clone();
-              cloned.transparent = true;
-              cloned.side = THREE.DoubleSide;
               
               // Tweak untuk Kaca & Metal (Memperbaiki shading/FBX export)
               if (cloned.opacity < 0.9 || cloned.transmission > 0) {
                 cloned.transparent = true;
                 cloned.depthWrite = false; // Kaca jangan menutupi render di belakangnya
                 cloned.roughness = 0.1;
+                cloned.userData = { isGlass: true };
+              } else {
+                cloned.userData = { isGlass: false };
               }
               // Jika metalness tinggi banget, turunkan sedikit agar cahaya lampu mempan
               if (cloned.metalness > 0.8) {
@@ -291,12 +292,17 @@ function loadAllProducts() {
 
 function setGroupOpacity(group, opacity) {
   if (!group) return;
+  const isGhost = opacity < 0.95;
   group.traverse((child) => {
     if (child.isMesh) {
       if (Array.isArray(child.material)) {
-        child.material.forEach(m => { m.opacity = opacity; });
+        child.material.forEach(m => { 
+            m.opacity = opacity; 
+            if (m.userData && !m.userData.isGlass) m.depthWrite = !isGhost;
+        });
       } else {
         child.material.opacity = opacity;
+        if (child.material.userData && !child.material.userData.isGlass) child.material.depthWrite = !isGhost;
       }
     }
   });
@@ -717,9 +723,7 @@ function animate() {
     const spacing = 6.5; // Jarak antar objek diperlebar lebih jauh
     const targetX = diff * spacing;
     
-    // Scale and opacity interpolation (objek pinggir terlihat sedikit memudar)
     const targetScale = isCenter ? 1.0 : 0.55;
-    const targetOpacity = isCenter ? 1.0 : 0.35;
 
     // Position x interpolation
     group.position.x += (targetX - group.position.x) * 0.09;
@@ -727,10 +731,6 @@ function animate() {
     // Scale interpolation
     const newScale = group.scale.x + (targetScale - group.scale.x) * 0.09;
     group.scale.setScalar(newScale || 1);
-
-    // Opacity interpolation
-    group.userData.opacity += (targetOpacity - group.userData.opacity) * 0.09;
-    setGroupOpacity(group, group.userData.opacity);
 
     // Objek samping selalu terlihat (dist <= 1), objek jauh disembunyikan
     group.visible = dist <= 1;
