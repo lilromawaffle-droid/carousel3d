@@ -27,7 +27,7 @@
       height: 100%;
       overflow: hidden;
       background: radial-gradient(circle at 50% 50%, var(--target-bg-color, #1a1f33) 0%, #090b10 100%);
-      transition: --target-bg-color 1.5s ease-in-out;
+      transition: --target-bg-color 0.7s ease;
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       color: #ffffff;
     }

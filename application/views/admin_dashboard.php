@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - 3D Showcase</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -275,7 +277,7 @@
                     <td style="color: #8292ff;"><?= htmlspecialchars($cat['slug']) ?></td>
                     <td>
                       <button class="action-btn btn-edit" onclick="editCategory(<?= $cat['id'] ?>, '<?= htmlspecialchars(addslashes($cat['name'])) ?>')">Edit</button>
-                      <a class="action-btn btn-delete" href="?c=Admin&m=delete_category&id=<?= $cat['id'] ?>" onclick="return confirm('Yakin hapus kategori ini? Semua barang di dalamnya akan ikut terhapus!');">Hapus</a>
+                      <a class="action-btn btn-delete" href="?c=Admin&m=delete_category&id=<?= $cat['id'] ?>" onclick="confirmDelete(event, this.href, 'Hapus Kategori?', 'Yakin hapus kategori ini? Semua barang di dalamnya akan ikut terhapus!');">Hapus</a>
                     </td>
                   </tr>
                   <?php endforeach; ?>
@@ -311,7 +313,7 @@
                     <td style="color: #7bed9f;"><code><?= htmlspecialchars($item['path']) ?></code></td>
                     <td>
                       <button class="action-btn btn-edit" onclick="editItem(<?= htmlspecialchars(json_encode($item)) ?>)">Edit</button>
-                      <a class="action-btn btn-delete" href="?c=Admin&m=delete_item&id=<?= $item['id'] ?>" onclick="return confirm('Yakin hapus item ini?');">Hapus</a>
+                      <a class="action-btn btn-delete" href="?c=Admin&m=delete_item&id=<?= $item['id'] ?>" onclick="confirmDelete(event, this.href, 'Hapus Model 3D?', 'Yakin hapus item ini secara permanen?');">Hapus</a>
                     </td>
                   </tr>
                   <?php endforeach; ?>
@@ -332,7 +334,7 @@
     <div class="modal-content" style="max-width: 500px;">
       <button class="modal-close" onclick="closeCatModal()">&#10005;</button>
       <h2 class="card-title" id="form-category-title">Tambah Kategori</h2>
-      <form action="?c=Admin&m=save_category" method="POST" id="form-category">
+      <form action="?c=Admin&m=save_category" method="POST" id="form-category" novalidate>
         <input type="hidden" name="id" id="cat_id" value="">
         <div class="form-group">
           <label for="cat_name">Nama Kategori</label>
@@ -351,7 +353,7 @@
     <div class="modal-content">
       <button class="modal-close" onclick="closeItemModal()">&#10005;</button>
       <h2 class="card-title" id="form-item-title">Tambah Model 3D</h2>
-      <form action="?c=Admin&m=save_item" method="POST" enctype="multipart/form-data" id="form-item">
+      <form action="?c=Admin&m=save_item" method="POST" enctype="multipart/form-data" id="form-item" novalidate>
         <input type="hidden" name="id" id="item_id" value="">
         
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -377,7 +379,7 @@
 
         <div class="form-group">
           <label for="description">Deskripsi Panjang (Bisa dienter untuk baris baru)</label>
-          <textarea id="description" name="description" class="form-control" placeholder="Penjelasan lengkap alat/barang..."></textarea>
+          <textarea id="description" name="description" class="form-control" placeholder="Penjelasan lengkap alat/barang..." required></textarea>
         </div>
 
         <!-- Dynamic Specs -->
@@ -396,7 +398,7 @@
             <label>File 3D (.fbx, .glb) (Max 2MB)</label>
             <div class="upload-area" id="upload-area">
                 <p>Tarik & Letakkan (Drag & Drop) file ke sini, atau <span class="highlight">Klik untuk Memilih</span></p>
-                <input type="file" id="file_3d" name="file_3d" accept=".fbx,.glb,.obj">
+                <input type="file" id="file_3d" name="file_3d" accept=".fbx,.glb,.obj" required>
                 <div class="file-name-display" id="file-name-display"></div>
             </div>
             <p style="font-size: 12px; color: #7bed9f; margin-top: 10px; line-height: 1.4;">💡 <b>Sangat Disarankan:</b> Gunakan file dengan format <b>.glb</b> karena ukurannya jauh lebih kecil, memuat lebih cepat, dan material warnanya langsung akurat di web.</p>
@@ -482,6 +484,7 @@
         // Handle path
         document.getElementById('existing_path').value = itemData.path;
         document.getElementById('existing-path-info').innerText = "Path saat ini: " + itemData.path + " (Biarkan area upload kosong jika tidak diubah)";
+        document.getElementById('file_3d').removeAttribute('required'); // Tidak wajib jika mode Edit
 
         // Handle bg_color
         if (itemData.bg_color && itemData.bg_color.trim() !== '') {
@@ -514,6 +517,7 @@
         document.getElementById('existing_path').value = '';
         document.getElementById('existing-path-info').innerText = '';
         document.getElementById('specs-container').innerHTML = '';
+        document.getElementById('file_3d').setAttribute('required', 'required'); // Wajib jika mode Tambah
         
         document.getElementById('bg_color').value = '#1a1f33';
         document.getElementById('auto_color').checked = true;
@@ -563,6 +567,71 @@
         } else {
             fileNameDisplay.style.display = 'none';
         }
+    }
+
+    // Custom Validation (SweetAlert2)
+    const swalConfig = {
+      background: 'rgba(20, 24, 40, 0.95)',
+      color: '#fff',
+      confirmButtonColor: '#6d7bff',
+      backdrop: 'rgba(0,0,0,0.7)',
+      customClass: { popup: 'glass-card' }
+    };
+
+    document.getElementById('form-category').addEventListener('submit', function(e) {
+        const name = document.getElementById('cat_name').value.trim();
+        if (!name) {
+            e.preventDefault();
+            Swal.fire({ ...swalConfig, icon: 'warning', title: 'Oops...', text: 'Nama Kategori tidak boleh kosong!' });
+        }
+    });
+
+    document.getElementById('form-item').addEventListener('submit', function(e) {
+        const categoryId = document.getElementById('category_id').value;
+        const itemName = document.getElementById('item_name').value.trim();
+        const description = document.getElementById('description').value.trim();
+        const file = document.getElementById('file_3d').files[0];
+        const isEdit = document.getElementById('item_id').value !== '';
+
+        if (!categoryId) {
+            e.preventDefault();
+            Swal.fire({ ...swalConfig, icon: 'warning', title: 'Belum Lengkap!', text: 'Silakan pilih Kategori terlebih dahulu.' });
+            return;
+        }
+        if (!itemName) {
+            e.preventDefault();
+            Swal.fire({ ...swalConfig, icon: 'warning', title: 'Belum Lengkap!', text: 'Nama Barang wajib diisi.' });
+            return;
+        }
+        if (!description) {
+            e.preventDefault();
+            Swal.fire({ ...swalConfig, icon: 'warning', title: 'Belum Lengkap!', text: 'Deskripsi Panjang wajib diisi untuk informasi detail barang.' });
+            return;
+        }
+        if (!isEdit && !file) {
+            e.preventDefault();
+            Swal.fire({ ...swalConfig, icon: 'warning', title: 'Belum Lengkap!', text: 'Anda harus mengupload File 3D (.fbx, .glb) untuk barang baru!' });
+            return;
+        }
+    });
+
+    function confirmDelete(e, url, title, text) {
+        e.preventDefault();
+        Swal.fire({
+            ...swalConfig,
+            icon: 'warning',
+            title: title,
+            text: text,
+            showCancelButton: true,
+            confirmButtonColor: '#ff4757',
+            cancelButtonColor: 'rgba(255,255,255,0.1)',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url;
+            }
+        });
     }
   </script>
 </body>
